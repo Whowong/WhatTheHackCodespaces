@@ -1,0 +1,17 @@
+name: Daily Pull
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  pull_folders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run pull_folders.ps1 script
+        run: pwsh .github/scripts/pull_folders.ps1
