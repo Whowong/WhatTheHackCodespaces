@@ -4,7 +4,7 @@
     "name" : "DevOps with GitHub WTH in Codespaces",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/dotnet:0-6.0",
-	"workspaceFolder": "/workspace/DevOpsWithGitHub",
+	"workspaceFolder": "/workspace/031-DevOpsWithGitHub",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {
