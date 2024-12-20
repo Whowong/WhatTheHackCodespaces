@@ -4,7 +4,7 @@
 $repoUrl = "https://github.com/Whowong/WhatTheHack"
 
 # Clone the repository to a temporary directory
-git clone --depth 1 $repoUrl tempRepo
+git clone $repoUrl tempRepo
 
 # Change to the repository directory
 Set-Location tempRepo
@@ -27,6 +27,13 @@ foreach ($hack in $hacks) {
 
     # Copy everything except the Coaches folder
     Copy-Item "$($hack.Name)\*" -Destination "../$($hack.Name)" -Recurse -Force -Exclude "Coach"
+
+    # Copy the devcontainer file as well
+    if (!(Test-Path "../.devcontainer/$($hack.Name)")) {
+        New-Item -ItemType Directory -Path "../.devcontainer/$($hack.Name)"
+    }
+
+    Copy-Item ".devcontainer/$($hack.Name)/devcontainer.json" -Destination "../.devcontainer/$($hack.Name)/devcontainer.json" -Force
     
 }
 
