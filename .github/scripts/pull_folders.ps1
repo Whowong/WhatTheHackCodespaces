@@ -12,10 +12,6 @@ Set-Location tempRepo
 #Temporarily point to test branch
 git checkout Codespaces-Devcontainer
 
-# Configure git user
-git config --local user.name "What-The-Hack-Codespaces-Bot"
-git config --local user.email "What-The-Hack-Codespaces-Bot@users.noreply.github.com"
-
 # Iterate through the hacks from the devcontainer directory
 $hacks = Get-ChildItem -Path .devcontainer -Directory
 
@@ -44,8 +40,8 @@ Set-Location ..
 Remove-Item -Recurse -Force tempRepo
 
 # Commit the changes to the repository
+git config --global user.name "GitHub Actions Codespace Automation"
+git config --global user.email "actions@github.com"
 git add .
 git commit -m "Daily pull of student and resources folders"
 git push
-
-
