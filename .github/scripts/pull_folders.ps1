@@ -3,38 +3,42 @@
 # Define the repository URL
 $repoUrl = "https://github.com/Whowong/WhatTheHack"
 
-# Clone the repository
-git clone $repoUrl tempRepo
+# Clone the repository to a temporary directory
+git clone --depth 1 $repoUrl tempRepo
 
 # Change to the repository directory
 Set-Location tempRepo
 
-# Configure git user
-git config --local user.name "github-actions[bot]"
-git config --local user.email "github-actions[bot]@users.noreply.github.com"
+#Temporarily point to test branch
+git checkout Codespaces-Devcontainer
 
-# Iterate through the hacks
-$hacks = Get-ChildItem -Directory
+# Configure git user
+git config --local user.name "What-The-Hack-Codespaces-Bot"
+git config --local user.email "What-The-Hack-Codespaces-Bot@users.noreply.github.com"
+
+# Iterate through the hacks from the devcontainer directory
+$hacks = Get-ChildItem -Path .devcontainer -Directory
 
 foreach ($hack in $hacks) {
-    # Check for the presence of a devcontainer file
-    if (Test-Path "/.github/$($hack.FullName)/devcontainer.json") {
-        # Copy the student and resources folders to the local repository
-        Copy-Item "$($hack.FullName)/student" -Destination "../../student" -Recurse -Force
-        Copy-Item "$($hack.FullName)/resources" -Destination "../../resources" -Recurse -Force
+    #If hack folder doesn't exist, create it
+    if (!(Test-Path "../$($hack.Name)")) {
+        New-Item -ItemType Directory -Path "../$($hack.Name)"
     }
+
+    # Copy everything except the Coaches folder
+    Copy-Item "$($hack.Name)\*" -Destination "../$($hack.Name)" -Recurse -Force -Exclude "Coach"
+    
 }
 
 # Change back to the original directory
 Set-Location ..
 
-# Replace spaces with underscores in filenames
-Get-ChildItem -Recurse | Rename-Item -NewName { $_.Name -replace ' ', '_' }
+# Clean up the temporary repository
+Remove-Item -Recurse -Force tempRepo
 
 # Commit the changes to the repository
 git add .
 git commit -m "Daily pull of student and resources folders"
 git push
 
-# Clean up
-Remove-Item -Recurse -Force tempRepo
+
