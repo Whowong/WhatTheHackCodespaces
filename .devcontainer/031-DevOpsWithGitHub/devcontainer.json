@@ -11,7 +11,8 @@
 			"installBicep": true,
 			"version": "latest"
 		}
-	}
+	},
+	"postAttachCommand": "/bin/bash /workspaces/WhatTheHack/.devcontainer/check-repo.sh"
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [5000, 5001],

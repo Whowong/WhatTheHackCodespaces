@@ -12,6 +12,7 @@
       "cpus": 1
     },
     "waitFor": "onCreateCommand",
+    "postAttachCommand": "/bin/bash /workspaces/WhatTheHack/.devcontainer/check-repo.sh",
     "updateContentCommand":"",
     "postCreateCommand": "",
     "customizations": {
