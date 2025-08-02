@@ -4,33 +4,74 @@
 $repoUrl = "https://github.com/Whowong/WhatTheHack"
 
 # Clone the repository to a temporary directory
-git clone $repoUrl tempRepo
+try {
+    Write-Host "Cloning repository from $repoUrl..."
+    git clone $repoUrl tempRepo
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to clone repository"
+    }
+} catch {
+    Write-Error "Error cloning repository: $_"
+    exit 1
+}
 
 # Change to the repository directory
-Set-Location tempRepo
+try {
+    Set-Location tempRepo
+} catch {
+    Write-Error "Error changing to repository directory: $_"
+    exit 1
+}
 
 #Temporarily point to test branch
-git checkout Codespaces-Devcontainer
+try {
+    Write-Host "Switching to Codespaces-Devcontainer branch..."
+    git checkout Codespaces-Devcontainer
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to checkout Codespaces-Devcontainer branch"
+    }
+} catch {
+    Write-Error "Error switching to branch: $_"
+    Set-Location ..
+    Remove-Item -Recurse -Force tempRepo -ErrorAction SilentlyContinue
+    exit 1
+}
 
 # Iterate through the hacks from the devcontainer directory
-$hacks = Get-ChildItem -Path .devcontainer -Directory
+try {
+    $hacks = Get-ChildItem -Path .devcontainer -Directory
+    Write-Host "Found $($hacks.Count) hack directories"
+} catch {
+    Write-Error "Error reading .devcontainer directory: $_"
+    Set-Location ..
+    Remove-Item -Recurse -Force tempRepo -ErrorAction SilentlyContinue
+    exit 1
+}
 
 foreach ($hack in $hacks) {
-    #If hack folder doesn't exist, create it
-    if (!(Test-Path "../$($hack.Name)")) {
-        New-Item -ItemType Directory -Path "../$($hack.Name)"
+    try {
+        Write-Host "Processing hack: $($hack.Name)"
+        
+        #If hack folder doesn't exist, create it
+        if (!(Test-Path "../$($hack.Name)")) {
+            New-Item -ItemType Directory -Path "../$($hack.Name)" -Force
+        }
+
+        # Copy everything except the Coaches folder
+        Copy-Item "$($hack.Name)\*" -Destination "../$($hack.Name)" -Recurse -Force -Exclude "Coach"
+
+        # Copy the devcontainer file as well
+        if (!(Test-Path "../.devcontainer/$($hack.Name)")) {
+            New-Item -ItemType Directory -Path "../.devcontainer/$($hack.Name)" -Force
+        }
+
+        Copy-Item ".devcontainer/$($hack.Name)/devcontainer.json" -Destination "../.devcontainer/$($hack.Name)/devcontainer.json" -Force
+        
+        Write-Host "Successfully processed hack: $($hack.Name)"
+    } catch {
+        Write-Warning "Error processing hack $($hack.Name): $_"
+        # Continue with other hacks instead of failing completely
     }
-
-    # Copy everything except the Coaches folder
-    Copy-Item "$($hack.Name)\*" -Destination "../$($hack.Name)" -Recurse -Force -Exclude "Coach"
-
-    # Copy the devcontainer file as well
-    if (!(Test-Path "../.devcontainer/$($hack.Name)")) {
-        New-Item -ItemType Directory -Path "../.devcontainer/$($hack.Name)"
-    }
-
-    Copy-Item ".devcontainer/$($hack.Name)/devcontainer.json" -Destination "../.devcontainer/$($hack.Name)/devcontainer.json" -Force
-    
 }
 
 # Change back to the original directory
@@ -40,13 +81,49 @@ Set-Location ..
 Remove-Item -Recurse -Force tempRepo
 
 # Create a new branch for the changes
-$branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
-git config --global user.name "GitHub Actions Codespace Automation"
-git config --global user.email "actions@github.com"
-git checkout -b $branchName
-git add .
-git commit -m "Daily pull of student and resources folders"
-git push origin $branchName
+try {
+    $branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
+    git config --global user.name "GitHub Actions Codespace Automation"
+    git config --global user.email "actions@github.com"
+    git checkout -b $branchName
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create branch $branchName"
+    }
+    
+    git add .
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to add files to git"
+    }
+    
+    git commit -m "Daily pull of student and resources folders"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to commit changes"
+    }
+    
+    git push origin $branchName
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to push branch to origin"
+    }
+    
+    Write-Host "Successfully created and pushed branch: $branchName"
+} catch {
+    Write-Error "Error with git operations: $_"
+    exit 1
+}
 
 # Create a pull request using GitHub CLI
-gh pr create --title "Daily pull of student and resources folders" --body "Automated pull of student and resources folders from WhatTheHack repository" --base main --head $branchName
+try {
+    if ($env:GH_TOKEN) {
+        gh pr create --title "Daily pull of student and resources folders" --body "Automated pull of student and resources folders from WhatTheHack repository" --base main --head $branchName
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create pull request"
+        }
+        Write-Host "Successfully created pull request"
+    } else {
+        Write-Host "GH_TOKEN environment variable not set. Pull request not created automatically."
+        Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+    }
+} catch {
+    Write-Error "Error creating pull request: $_"
+    Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+}
