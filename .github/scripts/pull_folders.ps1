@@ -3,6 +3,65 @@
 # Define the repository URL
 $repoUrl = "https://github.com/Whowong/WhatTheHack"
 
+# Create a new branch for the changes
+try {
+    $branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
+    git config --global user.name "GitHub Actions Codespace Automation"
+    git config --global user.email "actions@github.com"
+    
+   
+    # Check if branch exists on remote
+    git fetch origin
+    $remoteBranchExists = git branch -r --list "origin/$branchName"
+    
+    if ($remoteBranchExists) {
+        Write-Host "Branch $branchName already exists on remote. Checking out and pulling latest changes..."
+        git checkout $branchName
+        if ($LASTEXITCODE -ne 0) {
+            # If local branch doesn't exist, create it tracking the remote
+            git checkout -b $branchName origin/$branchName
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to checkout existing branch $branchName"
+            }
+        } else {
+            # Pull latest changes if we successfully checked out the local branch
+            git pull origin $branchName
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to pull latest changes for branch $branchName"
+            }
+        }
+    } else {
+        Write-Host "Creating new branch $branchName..."
+        git checkout -b $branchName
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create branch $branchName"
+        }
+    }
+    
+    git add .
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to add files to git"
+    }
+    
+
+    git commit -m "Daily pull of student and resources folders"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to commit changes"
+    }
+    
+    git push origin $branchName
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to push branch to origin"
+    }
+    
+    Write-Host "Successfully updated and pushed branch: $branchName"
+
+    
+} catch {
+    Write-Error "Error with git operations: $_"
+    exit 1
+}
+
 # Clone the repository to a temporary directory
 try {
     Write-Host "Cloning repository from $repoUrl..."
@@ -80,66 +139,6 @@ Set-Location ..
 # Clean up the temporary repository
 Remove-Item -Recurse -Force tempRepo
 
-# Create a new branch for the changes
-try {
-    $branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
-    git config --global user.name "GitHub Actions Codespace Automation"
-    git config --global user.email "actions@github.com"
-    
-    # Check if branch already exists locally
-    $localBranchExists = git branch --list $branchName
-    
-    # Check if branch exists on remote
-    git fetch origin
-    $remoteBranchExists = git branch -r --list "origin/$branchName"
-    
-    if ($remoteBranchExists) {
-        Write-Host "Branch $branchName already exists on remote. Checking out and pulling latest changes..."
-        git checkout $branchName
-        if ($LASTEXITCODE -ne 0) {
-            # If local branch doesn't exist, create it tracking the remote
-            git checkout -b $branchName origin/$branchName
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed to checkout existing branch $branchName"
-            }
-        } else {
-            # Pull latest changes if we successfully checked out the local branch
-            git pull origin $branchName
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed to pull latest changes for branch $branchName"
-            }
-        }
-    } else {
-        Write-Host "Creating new branch $branchName..."
-        git checkout -b $branchName
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to create branch $branchName"
-        }
-    }
-    
-    git add .
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to add files to git"
-    }
-    
-
-    git commit -m "Daily pull of student and resources folders"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to commit changes"
-    }
-    
-    git push origin $branchName
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to push branch to origin"
-    }
-    
-    Write-Host "Successfully updated and pushed branch: $branchName"
-
-    
-} catch {
-    Write-Error "Error with git operations: $_"
-    exit 1
-}
 
 # Create a pull request using GitHub CLI
 try {
