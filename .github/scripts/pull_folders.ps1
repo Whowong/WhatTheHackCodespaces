@@ -114,16 +114,17 @@ try {
 # Create a pull request using GitHub CLI
 try {
     if ($env:GH_TOKEN) {
+        Write-Host "Creating pull request..."
         gh pr create --title "Daily pull of student and resources folders" --body "Automated pull of student and resources folders from WhatTheHack repository" --base main --head $branchName
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to create pull request"
         }
         Write-Host "Successfully created pull request"
     } else {
-        Write-Host "GH_TOKEN environment variable not set. Pull request not created automatically."
-        Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+        Write-Warning "GH_TOKEN environment variable not set. Pull request not created automatically."
+        exit 1
     }
 } catch {
     Write-Error "Error creating pull request: $_"
-    Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+    exit 1
 }
