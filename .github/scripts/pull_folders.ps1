@@ -37,26 +37,8 @@ try {
             throw "Failed to create branch $branchName"
         }
     }
-    
-    git add .
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to add files to git"
-    }
-    
+    Write-Host "Successfully created or checked out branch: $branchName"
 
-    git commit -m "Daily pull of student and resources folders"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to commit changes"
-    }
-    
-    git push origin $branchName
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to push branch to origin"
-    }
-    
-    Write-Host "Successfully updated and pushed branch: $branchName"
-
-    
 } catch {
     Write-Error "Error with git operations: $_"
     exit 1
@@ -139,6 +121,23 @@ Set-Location ..
 # Clean up the temporary repository
 Remove-Item -Recurse -Force tempRepo
 
+git add .
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to add files to git"
+}
+
+
+git commit -m "Daily pull of student and resources folders"
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to commit changes"
+}
+
+git push origin $branchName
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to push branch to origin"
+}
+
+Write-Host "Successfully committed and pushed branch: $branchName"
 
 # Create a pull request using GitHub CLI
 try {
