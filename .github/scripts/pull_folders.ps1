@@ -39,9 +39,14 @@ Set-Location ..
 # Clean up the temporary repository
 Remove-Item -Recurse -Force tempRepo
 
-# Commit the changes to the repository
+# Create a new branch for the changes
+$branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
 git config --global user.name "GitHub Actions Codespace Automation"
 git config --global user.email "actions@github.com"
+git checkout -b $branchName
 git add .
 git commit -m "Daily pull of student and resources folders"
-git push
+git push origin $branchName
+
+# Create a pull request using GitHub CLI
+gh pr create --title "Daily pull of student and resources folders" --body "Automated pull of student and resources folders from WhatTheHack repository" --base main --head $branchName
