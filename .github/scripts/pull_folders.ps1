@@ -85,9 +85,36 @@ try {
     $branchName = "auto-update-$(Get-Date -Format 'yyyy-MM-dd')"
     git config --global user.name "GitHub Actions Codespace Automation"
     git config --global user.email "actions@github.com"
-    git checkout -b $branchName
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create branch $branchName"
+    
+    # Check if branch already exists locally
+    $localBranchExists = git branch --list $branchName
+    
+    # Check if branch exists on remote
+    git fetch origin
+    $remoteBranchExists = git branch -r --list "origin/$branchName"
+    
+    if ($remoteBranchExists) {
+        Write-Host "Branch $branchName already exists on remote. Checking out and pulling latest changes..."
+        git checkout $branchName
+        if ($LASTEXITCODE -ne 0) {
+            # If local branch doesn't exist, create it tracking the remote
+            git checkout -b $branchName origin/$branchName
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to checkout existing branch $branchName"
+            }
+        } else {
+            # Pull latest changes if we successfully checked out the local branch
+            git pull origin $branchName
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to pull latest changes for branch $branchName"
+            }
+        }
+    } else {
+        Write-Host "Creating new branch $branchName..."
+        git checkout -b $branchName
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create branch $branchName"
+        }
     }
     
     git add .
@@ -95,6 +122,7 @@ try {
         throw "Failed to add files to git"
     }
     
+
     git commit -m "Daily pull of student and resources folders"
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to commit changes"
@@ -105,7 +133,9 @@ try {
         throw "Failed to push branch to origin"
     }
     
-    Write-Host "Successfully created and pushed branch: $branchName"
+    Write-Host "Successfully updated and pushed branch: $branchName"
+
+    
 } catch {
     Write-Error "Error with git operations: $_"
     exit 1
@@ -114,16 +144,17 @@ try {
 # Create a pull request using GitHub CLI
 try {
     if ($env:GH_TOKEN) {
+        Write-Host "Creating pull request..."
         gh pr create --title "Daily pull of student and resources folders" --body "Automated pull of student and resources folders from WhatTheHack repository" --base main --head $branchName
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to create pull request"
         }
         Write-Host "Successfully created pull request"
     } else {
-        Write-Host "GH_TOKEN environment variable not set. Pull request not created automatically."
-        Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+        Write-Warning "GH_TOKEN environment variable not set. Pull request not created automatically."
+        exit 1
     }
 } catch {
     Write-Error "Error creating pull request: $_"
-    Write-Host "Create a pull request manually at: https://github.com/Whowong/WhatTheHackCodespaces/pull/new/$branchName"
+    exit 1
 }
