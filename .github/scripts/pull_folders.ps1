@@ -28,6 +28,7 @@ try {
 # Change to the repository directory
 try {
     Set-Location tempRepo
+    git checkout Codespaces-Devcontainer
 } catch {
     Write-Error "Error changing to repository directory: $_"
     exit 1
