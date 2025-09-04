@@ -108,14 +108,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 
-git commit -m "Daily pull of student and resources folders"
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to commit changes"
+# Check if there are any changes to commit
+$gitStatus = git status --porcelain
+if ($gitStatus) {
+    Write-Host "Changes detected, committing..."
+    git commit -m "Daily pull of student and resources folders"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to commit changes"
+    }
+
+    git push origin main
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to push changes to main"
+    }
+
+    Write-Host "Successfully committed and pushed changes to main branch"
+} else {
+    Write-Host "No changes detected, skipping commit"
 }
 
-git push origin main
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to push changes to main"
-}
-
-Write-Host "Successfully committed and pushed changes to main branch"
